@@ -126,5 +126,8 @@ dmypy.json
 
 # このプロジェクトでignoreする項目
 
-save_data
-NewsAggregatorDataset
+ch6_folder
+ch7_folder
+ch8_folder
+ch9_folder
+ch10_folder
