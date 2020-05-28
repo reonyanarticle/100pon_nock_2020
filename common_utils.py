@@ -1,6 +1,11 @@
 import csv
 import os
 import numpy as np
+import re
+import matplotlib.pyplot as plt
+import japanize_matplotlib
+from IPython.display import clear_output
+from tensorflow.keras.callbacks import Callback
 
 from typing import List
 
@@ -25,7 +30,7 @@ def make_csv(csv_path: str, words_list: List[List[str]], headers: List[str] = No
 
             writer.writerows(words_list)
         return None
-
+    
 
 def cosine_similarity(vec1: np.ndarray, vec2: np.ndarray) -> float:
     """
@@ -39,3 +44,98 @@ def cosine_similarity(vec1: np.ndarray, vec2: np.ndarray) -> float:
 
     """
     return np.dot(vec1, vec2) / (np.linalg.norm(vec1) * np.linalg.norm(vec2))
+
+
+def tokenize(word: str) -> str:
+    """
+    """
+    word = word.replace('-', '')
+    word = word.replace(',', '')
+    word = word.replace('.', '')
+    return word
+
+
+class RealTimePlot(Callback):
+    def __init__(self, name=False, absolute=False, log_scale=False, path=os.getcwd() ,save=False):
+        super().__init__()
+        self.name = name
+        self.absolute = absolute
+        self.log_scale = log_scale
+        self.path = path
+        self.save = save
+
+    def on_train_begin(self, logs={}):
+        self.i = 0
+        self.x = []
+        self.losses = []
+        self.val_losses = []
+        self.acc = []
+        self.val_acc = []
+        self.fig = plt.figure()
+        
+        self.logs = []
+
+    def on_epoch_end(self, epoch, logs={}):
+        
+        self.logs.append(logs)
+        self.x.append(self.i)
+        self.losses.append(logs.get('loss'))
+        self.val_losses.append(logs.get('val_loss'))
+        self.acc.append(logs.get('accuracy'))
+        self.val_acc.append(logs.get('val_accuracy'))
+        self.i += 1
+        
+        fig, (ax1, ax2) = plt.subplots(1, 2, sharex=True, figsize=(10,5))
+        clear_output(wait=True)
+        
+        # fig全体の設定
+        if self.name:
+            fig.suptitle('{0}の学習'.format(self.name))
+            
+        
+        # fig内のax1(サブグラフ)の設定
+        if self.log_scale:
+            ax1.set_yscale('log')
+            
+        ax1.plot(self.x, self.losses, label="loss")
+        ax1.plot(self.x, self.val_losses, label="val_loss")
+        ax1.legend()
+        
+        # fig内のax2(サブグラフ)の設定
+        if self.absolute:
+            ax2.set_ylim(0.6, 0.98)
+
+        ax2.plot(self.x, self.acc, label="accuracy")
+        ax2.plot(self.x, self.val_acc, label="val_accuracy")
+        ax2.legend()
+        plt.show();
+        
+    def on_train_end(self, logs={}):
+        fig, (ax1, ax2) = plt.subplots(1, 2, sharex=True, figsize=(10,5))
+        clear_output(wait=True)
+        
+        # fig全体の設定
+        if self.name:
+            fig.suptitle('{0}の学習'.format(self.name))
+            
+        
+        # fig内のax1(サブグラフ)の設定
+        if self.log_scale:
+            ax1.set_yscale('log')
+    
+        ax1.plot(self.x, self.losses, label="loss")
+        ax1.plot(self.x, self.val_losses, label="val_loss")
+        ax1.legend()
+        
+        # fig内のax2(サブグラフ)の設定
+        if self.absolute:
+            ax2.set_ylim(0.6, 0.98)
+
+        ax2.plot(self.x, self.acc, label="accuracy")
+        ax2.plot(self.x, self.val_acc, label="val_accuracy")
+        ax2.legend()
+        
+        if self.save:
+            output_fig_name = os.path.join(self.path, self.name + '.png')
+            plt.savefig(output_fig_name)
+        plt.show();
